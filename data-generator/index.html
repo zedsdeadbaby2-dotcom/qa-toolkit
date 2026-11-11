@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מחולל נתוני בדיקה | Test Data Generator</title>
+<meta name="description" content="יצירת נתוני משתמשים פיקטיביים ותקינים לבדיקות תוכנה: שם, מגדר, אימייל, טלפון ותעודת זהות ישראלית. שמירה כ-CSV ובדיקת קבצים קיימים.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial'%3EDG%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topbar"><div class="inner">
+  <a class="brand" href="../index.html"><span class="logo">✓</span> QA Toolkit</a>
+  <nav class="nav">
+    <a href="../index.html">ראשי</a>
+    <a href="index.html" class="active">מחולל נתונים</a>
+    <a href="../log-analyzer/index.html">מנתח לוגים</a>
+    <button class="theme-btn" id="themeBtn" type="button" title="מצב כהה / בהיר">◐</button>
+  </nav>
+</div></header>
+
+<section class="hero"><div class="inner">
+  <h1>מחולל נתוני בדיקה</h1>
+  <p class="sub ltr" style="text-align:right">Test Data Generator &amp; Store</p>
+  <p class="lead">יוצר תוך שניות רשימות של משתמשים <b>פיקטיביים אבל תקינים</b> לבדיקות תוכנה: שם מלא, מגדר, אימייל, טלפון נייד ישראלי ותעודת זהות עם ספרת ביקורת נכונה.
+  הכלי מוודא שאין כפילויות בשדות המזהים, מאפשר להוריד את הנתונים כקובץ CSV שנפתח ב-Excel, ויודע גם לבדוק קובץ CSV קיים ולמצוא בו שורות שגויות או כפולות.</p>
+  <div class="badges"><span class="badge">עד 100,000 רשומות</span><span class="badge">ת"ז עם ספרת ביקורת</span><span class="badge">ללא כפילויות</span><span class="badge">הכול רץ בדפדפן, שום מידע לא נשלח</span></div>
+</div></section>
+
+<main>
+  <div class="tabs" role="tablist">
+    <button class="tab" data-panel="gen" type="button">יצירת נתונים</button>
+    <button class="tab" data-panel="check" type="button">בדיקת קובץ CSV</button>
+    <button class="tab" data-panel="guide" type="button">מדריך שימוש</button>
+  </div>
+
+  <!-- ============ generate ============ -->
+  <section class="panel" id="gen">
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>1. מה ליצור</h2>
+        <p class="hint">בחרו כמות ושדות. כל שורה היא משתמש אחד.</p>
+        <label class="field" for="count">מספר רשומות</label>
+        <input id="count" type="number" min="1" max="100000" step="1" value="50" class="ltr">
+        <div class="help">בין 1 ל-100,000.</div>
+        <label class="field">שדות (עמודות)</label>
+        <div class="checks" id="fieldList"></div>
+        <label class="field">מגדר</label>
+        <div class="checks">
+          <label class="check"><input type="radio" name="gmode" value="mixed" checked> מעורב</label>
+          <label class="check"><input type="radio" name="gmode" value="male"> גברים בלבד</label>
+          <label class="check"><input type="radio" name="gmode" value="female"> נשים בלבד</label>
+        </div>
+        <div class="help">המגדר קובע גם את השם הפרטי (נועה ↔ דוד).</div>
+      </div>
+      <div class="card">
+        <h2>2. בדיקת כפילויות</h2>
+        <p class="hint">שדות מסומנים לעולם לא יחזרו על אותו ערך בשתי שורות (השוואה ללא תלות באותיות גדולות/קטנות).</p>
+        <label class="field">ערכים ייחודיים בשדות</label>
+        <div class="checks" id="uniqueList"></div>
+        <div class="help">ברירת מחדל: אימייל, טלפון ות"ז. שמות יכולים לחזור, כמו במציאות (יש רק כ-1,440 צירופים).</div>
+        <label class="field" for="retries">ניסיונות לכל שורה</label>
+        <input id="retries" type="number" min="1" max="100000" value="1000" class="ltr">
+        <div class="help">אם שורה יוצאת כפולה, היא נוצרת מחדש עד מספר הפעמים הזה.</div>
+        <div class="row" style="margin-top:18px"><button class="btn primary" id="genBtn" type="button">▶ צור נתונים</button></div>
+        <div id="genMsg"></div>
+      </div>
+    </div>
+
+    <div id="results" hidden>
+      <div class="kpis">
+        <div class="kpi brand"><div class="k">רשומות שנוצרו</div><div class="v" id="kpiRows">0</div></div>
+        <div class="kpi"><div class="k">שדות</div><div class="v" id="kpiFields">0</div></div>
+        <div class="kpi"><div class="k">כפולות שנדחו</div><div class="v" id="kpiDup">0</div></div>
+        <div class="kpi ok"><div class="k">זמן יצירה</div><div class="v" id="kpiTime">0</div></div>
+      </div>
+      <div class="card">
+        <h2>3. תצוגה מקדימה</h2>
+        <p class="hint" id="previewInfo"></p>
+        <div id="preview"></div>
+      </div>
+      <div class="card">
+        <h2>4. הורדה כ-CSV</h2>
+        <p class="hint">הקובץ נשמר בקידוד UTF-8 עם BOM, כך ש-Excel פותח אותו נכון.</p>
+        <div class="row">
+          <input id="fileName" type="text" class="ltr" style="max-width:380px">
+          <button class="btn primary" id="dlBtn" type="button">⬇ הורד CSV</button>
+        </div>
+        <div id="dlMsg"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ check ============ -->
+  <section class="panel" id="check" hidden>
+    <div class="card">
+      <h2>בדיקת קובץ CSV קיים</h2>
+      <p class="hint">טענו קובץ CSV (למשל קובץ שהורדתם קודם, או קובץ נתונים מצוות אחר). הכלי בודק כל עמודה מוכרת ומסמן שורות עם ערכים לא תקינים ושורות שחוזרות על אימייל, טלפון או ת"ז.</p>
+      <div class="drop" id="drop" tabindex="0" role="button"><strong>גררו לכאן קובץ CSV</strong><br>או לחצו לבחירת קובץ · עד 50 MB · UTF-8</div>
+      <input type="file" id="fileInput" accept=".csv,text/csv" hidden>
+      <div id="checkResult"></div>
+    </div>
+  </section>
+
+  <!-- ============ guide ============ -->
+  <section class="panel" id="guide" hidden>
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>איך משתמשים - 4 צעדים</h2>
+        <ol class="steps">
+          <li><b>בוחרים כמות</b>כמה משתמשים צריך לבדיקה (למשל 50 לטופס הרשמה, 10,000 לבדיקת עומס).</li>
+          <li><b>בוחרים שדות ומגדר</b>מסמנים רק את העמודות שהמערכת הנבדקת צריכה. הסדר בקובץ קבוע: שם, מגדר, אימייל, טלפון, ת"ז.</li>
+          <li><b>לוחצים "צור נתונים"</b>הנתונים נוצרים בדפדפן ומוצגים בתצוגה מקדימה. אפשר ללחוץ שוב כדי לקבל נתונים אחרים.</li>
+          <li><b>מורידים CSV</b>נותנים שם לקובץ ולוחצים "הורד". משתמשים בו לייבוא, לאוטומציה (Data-Driven) או ל-Postman.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h2>חוקי השדות</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Field</th><th>Rule</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td>full_name</td><td>First + Last, Latin letters</td><td>Noa Cohen</td></tr>
+            <tr><td>gender</td><td>Male / Female, matches first name</td><td>Female</td></tr>
+            <tr><td>email</td><td>name + number @ test domain</td><td>noa.cohen123@example.com</td></tr>
+            <tr><td>phone</td><td>05X-XXXXXXX (050-055, 058)</td><td>052-1234567</td></tr>
+            <tr><td>israeli_id</td><td>9 digits, valid check digit</td><td>123456782</td></tr>
+          </tbody>
+        </table></div>
+        <p class="help">הדומיינים (example.com, test.co.il...) שמורים לבדיקות, כך שלא יישלח מייל לאדם אמיתי.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>שאלות נפוצות</h2>
+      <details><summary>קיבלתי הודעה "Generated only N/M unique records"</summary>ביקשתם ייחודיות על שדה עם מעט ערכים אפשריים (למשל שם מלא - כ-1,440 צירופים, או מגדר - 2). הקטינו את הכמות או בטלו את הייחודיות על השדה הזה. אפשר לשמור את הרשומות שכן נוצרו.</details>
+      <details><summary>האפס בתחילת ת"ז נעלם ב-Excel</summary>הקובץ עצמו שומר 9 ספרות. Excel מציג את העמודה כמספר; כדי לראות את האפס, ייבאו את העמודה כ-Text (Data → From Text/CSV).</details>
+      <details><summary>מה בודק טאב "בדיקת קובץ CSV"?</summary>עמודות מוכרות לפי שם הכותרת: full_name, gender, email, phone, israeli_id. כל שורה עם ערך לא תקין מסומנת עם הסיבה. כפילויות נבדקות רק על אימייל, טלפון ות"ז.</details>
+      <details><summary>האם הנתונים נשלחים לשרת?</summary>לא. האתר הוא HTML/CSS/JavaScript בלבד. הכול נוצר ונבדק במחשב שלכם, וגם קבצים שטוענים לא יוצאים מהדפדפן.</details>
+      <details><summary>האם אלה נתונים של אנשים אמיתיים?</summary>לא. כל השמות, הטלפונים ומספרי הזהות נוצרים באקראי. ת"ז "תקינה" רק במובן שספרת הביקורת נכונה.</details>
+    </div>
+  </section>
+</main>
+<footer>QA Toolkit · מחולל נתוני בדיקה · הכול רץ בדפדפן</footer>
+<script src="../assets/common.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מנתח לוגים של בדיקות | Test Log Analyzer</title>
+<meta name="description" content="ניתוח לוגים של הרצות בדיקה (TXT/LOG/CSV): עברו/נכשלו, אחוז הצלחה, זמני ריצה, סינון שגיאות ואזהרות וייצוא דוח TXT או CSV.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231e3a8a'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='white' font-family='Arial'%3ELA%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topbar"><div class="inner">
+  <a class="brand" href="../index.html"><span class="logo">✓</span> QA Toolkit</a>
+  <nav class="nav">
+    <a href="../index.html">ראשי</a>
+    <a href="../data-generator/index.html">מחולל נתונים</a>
+    <a href="index.html" class="active">מנתח לוגים</a>
+    <button class="theme-btn" id="themeBtn" type="button" title="מצב כהה / בהיר">◐</button>
+  </nav>
+</div></header>
+
+<section class="hero"><div class="inner">
+  <h1>מנתח לוגים של בדיקות</h1>
+  <p class="sub ltr" style="text-align:right">Test Log Analyzer &amp; Exporter</p>
+  <p class="lead">טוענים קובץ לוג של הרצת בדיקות (פלט של pytest, log4j, Jenkins או כל לוג טקסט/CSV), ומקבלים מיד תמונת מצב:
+  כמה בדיקות עברו ונכשלו, אחוז הצלחה, זמני ריצה, הבדיקות האיטיות, ורשימת כל השגיאות והאזהרות עם סינון לפי מילה.
+  את התוצאה מורידים כדוח TXT לצירוף לבאג, או כ-CSV לניתוח ב-Excel.</p>
+  <div class="badges"><span class="badge">TXT / LOG / CSV</span><span class="badge">עד 100 MB</span><span class="badge">UTF-8 / UTF-16 / עברית ANSI</span><span class="badge">הקובץ לא יוצא מהדפדפן</span></div>
+</div></section>
+
+<main>
+  <div class="tabs" role="tablist">
+    <button class="tab" data-panel="load" type="button">1. טעינת לוג</button>
+    <button class="tab" data-panel="stats" type="button" data-needs-log>2. סטטיסטיקה</button>
+    <button class="tab" data-panel="issues" type="button" data-needs-log>3. שגיאות ואזהרות</button>
+    <button class="tab" data-panel="export" type="button" data-needs-log>4. ייצוא דוח</button>
+    <button class="tab" data-panel="unread" type="button" data-needs-log>שורות לא מזוהות</button>
+    <button class="tab" data-panel="guide" type="button">מדריך שימוש</button>
+  </div>
+
+  <section class="panel" id="load">
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>טעינת קובץ</h2>
+        <p class="hint">קובץ לוג מהמחשב. הזיהוי (טקסט או CSV, מפריד, קידוד) אוטומטי.</p>
+        <div class="drop" id="drop" tabindex="0" role="button"><strong>גררו לכאן קובץ לוג</strong><br>או לחצו לבחירה · .log .txt .csv · עד 100 MB</div>
+        <input type="file" id="fileInput" hidden>
+        <h3>או נסו קובץ דוגמה</h3>
+        <div class="row">
+          <button class="btn" type="button" data-sample="nightly_run.log">nightly_run.log</button>
+          <button class="btn" type="button" data-sample="nightly_run.csv">nightly_run.csv</button>
+        </div>
+        <p class="help">הרצה לילית פיקטיבית: 36 בדיקות, שגיאות, אזהרות ו-stack trace.</p>
+      </div>
+      <div class="card">
+        <h2>או הדביקו טקסט</h2>
+        <p class="hint">העתיקו שורות מחלון ה-CI או מהטרמינל.</p>
+        <textarea id="pasteArea" placeholder="2026-11-11 10:00:00 INFO test_login PASSED in 1.2s&#10;2026-11-11 10:00:05 ERROR test_checkout FAILED duration=3s Timeout"></textarea>
+        <div class="row" style="margin-top:10px">
+          <label class="check"><input type="checkbox" id="pasteCsv"> הטקסט הוא CSV</label>
+          <button class="btn primary" type="button" id="pasteBtn">נתח טקסט</button>
+        </div>
+      </div>
+    </div>
+    <div id="loadMsg"></div>
+  </section>
+
+  <section class="panel" id="stats" hidden>
+    <p class="muted">קובץ: <b class="ltr" id="loadedName"></b></p>
+    <div id="statsBody"></div>
+  </section>
+
+  <section class="panel" id="issues" hidden>
+    <div class="card">
+      <h2>שגיאות ואזהרות</h2>
+      <p class="hint" id="issueInfo"></p>
+      <div class="row">
+        <label class="check"><input type="radio" name="sev" value="errors"> שגיאות בלבד <small>ERROR + CRITICAL</small></label>
+        <label class="check"><input type="radio" name="sev" value="warnings"> אזהרות בלבד <small>WARNING</small></label>
+        <label class="check"><input type="radio" name="sev" value="both" checked> שתיהן</label>
+        <input type="text" id="keyword" placeholder="חיפוש מילה (למשל timeout, login)" style="max-width:300px">
+      </div>
+      <div id="issueBody" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="export" hidden>
+    <div class="card">
+      <h2>ייצוא דוח</h2>
+      <p class="hint">הדוח יורד למחשב (תיקיית ההורדות). המספרים זהים למה שמוצג במסך.</p>
+      <label class="field">מה לכלול</label>
+      <div class="checks">
+        <label class="check"><input type="radio" name="content" value="summary"> סיכום בלבד (סטטיסטיקה)</label>
+        <label class="check"><input type="radio" name="content" value="issues" checked> סיכום + כל השגיאות והאזהרות</label>
+        <label class="check" id="optFilter" hidden><input type="radio" name="content" value="last"> <span id="optFilterText"></span></label>
+      </div>
+      <label class="field">פורמט</label>
+      <div class="checks">
+        <label class="check"><input type="radio" name="fmt" value="txt" checked> TXT <small>קריא, לצירוף לבאג / מייל</small></label>
+        <label class="check"><input type="radio" name="fmt" value="csv"> CSV <small>טבלה ל-Excel, סינון לפי עמודת section</small></label>
+      </div>
+      <label class="field" for="fileName">שם הקובץ</label>
+      <div class="row"><input type="text" id="fileName" class="ltr" style="max-width:380px"><button class="btn primary" id="exportBtn" type="button">⬇ הורד דוח</button></div>
+      <div id="exportMsg"></div>
+      <pre id="reportPreview" class="ltr" style="max-height:420px;overflow:auto;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;text-align:left"></pre>
+    </div>
+  </section>
+
+  <section class="panel" id="unread" hidden>
+    <div class="card"><h2>שורות לא מזוהות</h2><p class="hint">שורות שלא נמצאה בהן רמת לוג או תוצאת בדיקה, וערכים (זמן, משך, רמה) שלא היו קריאים.</p><div id="unreadBody"></div></div>
+  </section>
+
+  <section class="panel" id="guide" hidden>
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>איך משתמשים - 4 צעדים</h2>
+        <ol class="steps">
+          <li><b>טוענים לוג</b>גוררים קובץ, בוחרים קובץ דוגמה או מדביקים טקסט. אחרי הטעינה נפתחים שאר הטאבים.</li>
+          <li><b>סטטיסטיקה</b>עברו / נכשלו / דולגו, אחוז הצלחה, זמנים, רמות לוג, הבדיקות האיטיות ורשימת הכשלונות.</li>
+          <li><b>שגיאות ואזהרות</b>בוחרים חומרה ומקלידים מילת חיפוש (לא תלוי באותיות גדולות). התוצאה מתעדכנת מיד.</li>
+          <li><b>ייצוא</b>בוחרים תוכן ופורמט ולוחצים "הורד דוח". אפשר לייצא בדיוק את הסינון האחרון שעשיתם.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h2>פורמטים נתמכים</h2>
+        <h3>לוג טקסט - שורה לכל אירוע</h3>
+        <pre class="ltr mono" style="text-align:left;white-space:pre-wrap;font-size:12px">2026-11-11 10:00:00 INFO test_login PASSED in 1.2s
+2026-11-11 10:00:05 [ERROR] test_pay FAILED duration=3s
+10:00:07 WARN Slow response (time-only stamps OK)
+[main] ERROR com.app.Login - connection refused
+  File "runner.py", line 12   &lt;- attached to the line above</pre>
+        <h3>CSV - שורת כותרת</h3>
+        <p>עמודות מזוהות לפי שם (באנגלית): <code>level/severity</code>, <code>status/result</code>, <code>test/name</code>, <code>timestamp/date</code>, <code>duration/elapsed_ms</code>, <code>message</code>. מפריד <code>, ; | Tab</code> מזוהה אוטומטית.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>שאלות נפוצות</h2>
+      <details><summary>איך מחושב אחוז ההצלחה?</summary>עברו ÷ (עברו + נכשלו). בדיקות שדולגו לא נספרות, כדי שדילוג לא יוריד ולא יעלה את האחוז.</details>
+      <details><summary>למה שורה עם המילה "failed" לא נספרה ככישלון?</summary>מילת תוצאה נספרת רק כשהיא כתובה כתוצאה: באותיות גדולות (FAILED), אחרי שם בדיקה (test_x failed) או כ-status=failed. משפט כמו "Login failed, retrying" הוא הודעה רגילה. גם שורת סיכום כמו "Totals: 10 PASSED, 2 FAILED" לא נספרת כבדיקה.</details>
+      <details><summary>מה זה "שורות לא מזוהות"?</summary>שורות שאין בהן רמה (INFO/ERROR...) ואין תוצאת בדיקה. שורות המשך (stack trace מוזח) מצורפות לשורה שמעליהן ולא נחשבות כלא מזוהות.</details>
+      <details><summary>הלוג שלי בעברית ומוצג ג'יבריש</summary>הכלי מזהה UTF-8, UTF-16 ו-Windows-1255 (ANSI עברי). אם עדיין מוצג לא נכון, שמרו את הקובץ מחדש כ-UTF-8.</details>
+      <details><summary>האם הלוג נשלח לשרת?</summary>לא. האתר הוא HTML/CSS/JavaScript בלבד ורץ כולו בדפדפן. הקובץ לא עוזב את המחשב.</details>
+      <details><summary>הדוח ב-CSV בטוח לפתיחה ב-Excel?</summary>כן. תאים שמתחילים ב- = + - @ מקבלים גרש בהתחלה, כך ש-Excel לא מריץ אותם כנוסחה (הגנה מ-CSV Injection).</details>
+    </div>
+  </section>
+</main>
+<footer>QA Toolkit · מנתח לוגים של בדיקות · הכול רץ בדפדפן</footer>
+<script src="../assets/common.js"></script>
+<script src="samples.js"></script>
+<script src="parser.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
